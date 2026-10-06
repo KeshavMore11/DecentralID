@@ -233,7 +233,7 @@ const credentialIssuerComponent = {
                         <input type="text" class="course-name" value="${course.courseName || ''}" oninput="credentialIssuerComponent.updateCourse(${course.id}, 'courseName', this.value)" placeholder="e.g., Mathematics-I" required />
                     </div>
                     <div class="form-group">
-                        <label>Grade (10-Pt Scale) *</label>
+                        <label>Grade *</label>
                         <select class="course-grade" onchange="credentialIssuerComponent.updateCourse(${course.id}, 'grade', this.value)" required>
                             <option value="">Select</option>
                             ${['O', 'A+', 'A', 'B+', 'B', 'C', 'P', 'F'].map(g => `<option value="${g}" ${course.grade === g ? 'selected' : ''}>${g}</option>`).join('')}
