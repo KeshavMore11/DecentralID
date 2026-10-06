@@ -7,6 +7,7 @@ const urlsToCache = [
     '/js/crypto-utils.js',
     '/js/storage.js',
     '/js/did-manager.js',
+    '/js/theme.js',
     '/js/role-switcher.js',
     '/js/credential-manager.js',
     '/js/selective-disclosure.js',

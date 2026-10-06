@@ -32,12 +32,19 @@
     // Floating switcher UI
     window.addEventListener('DOMContentLoaded', () => {
         const box = document.createElement('div');
+        box.id = 'role-switcher-box';
         box.style.cssText =
-            'position:fixed;bottom:12px;left:12px;z-index:99999;background:#1c1c1e;' +
-            'color:#fff;padding:8px 12px;border-radius:12px;font:13px sans-serif;' +
-            'border:1px solid #333;';
+            'position:fixed;bottom:16px;left:16px;z-index:99999;' +
+            'background:var(--glass-bg, rgba(255,255,255,0.9));' +
+            'backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);' +
+            'color:var(--text-primary, #0f172a);padding:8px 14px;border-radius:14px;' +
+            'font:600 13px "Plus Jakarta Sans", sans-serif;' +
+            'border:1px solid var(--glass-border, rgba(0,0,0,0.1));' +
+            'box-shadow:var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.1));' +
+            'display:flex;align-items:center;gap:8px;';
         box.innerHTML =
-            'Role: <select id="roleSel" style="background:#2c2c2e;color:#fff;border:0;border-radius:6px;padding:2px 6px">' +
+            '<span>Role:</span>' +
+            '<select id="roleSel" style="background:var(--bg-muted, #f1f5f9);color:var(--text-primary, #0f172a);border:1px solid var(--border-subtle, #e2e8f0);border-radius:8px;padding:4px 8px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;outline:none;">' +
             '<option value="student">Student (Holder)</option>' +
             '<option value="issuer">University (Issuer)</option></select>';
         document.body.appendChild(box);
