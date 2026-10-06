@@ -1,0 +1,4 @@
+# Add backend directory to gitignore
+backend/node_modules/
+backend/.env
+backend/package-lock.json

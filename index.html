@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description"
+        content="Self-Sovereign Identity app for academic credential verification - manage your decentralized digital identity">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <title>SSI Wallet - Academic Credentials</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- App Container -->
+    <div id="app" class="app-container">
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="loading-screen">
+            <div class="spinner"></div>
+            <p>Loading SSI Wallet...</p>
+        </div>
+
+        <!-- Main Content (will be dynamically populated) -->
+        <main id="main-content" class="main-content hidden">
+            <!-- Content injected by app.js -->
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/crypto-utils.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/did-manager.js"></script>
+    <script src="js/role-switcher.js"></script>
+    <script src="js/credential-manager.js"></script>
+    <script src="js/selective-disclosure.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/did-auth.js"></script>
+    <script src="js/components/onboarding.js"></script>
+    <script src="js/components/dashboard.js"></script>
+    <script src="js/components/credential-issuer.js"></script>
+    <script src="js/components/credential-holder.js"></script>
+    <script src="js/components/credential-verifier.js"></script>
+    <script src="js/components/role-selector.js"></script>
+    <script src="js/components/university-login.js"></script>
+    <script src="js/components/verifier-login.js"></script>
+    <script src="js/app.js"></script>
+
+
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('✓ Service Worker registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('✗ Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>
