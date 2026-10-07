@@ -1,4 +1,4 @@
-# Self-Sovereign Identity (SSI) Progressive Web App
+# DecentralID Self-Sovereign Identity (SSI)Web App
 
 A Progressive Web App for Academic Credential Verification using Decentralized Identifiers (DIDs) and Verifiable Credentials with MongoDB backend authentication.
 
