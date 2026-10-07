@@ -180,21 +180,69 @@ const credentialVerifierComponent = {
         let detailsHTML = '';
 
         if (type === 'credential') {
+            const renderCheckItem = (check, passed) => {
+                if (check === 'ethereumSignature') {
+                    if (result.isLegacy) {
+                        return `
+                            <div class="check-item check-pass" style="opacity: 0.9;">
+                                <span class="check-icon">ℹ️</span>
+                                <span class="check-name">Ethereum Signature (Sepolia): Legacy Credential (No Ethereum signature)</span>
+                            </div>
+                        `;
+                    }
+                    if (passed) {
+                        return `
+                            <div class="check-item check-pass">
+                                <span class="check-icon">✓</span>
+                                <span class="check-name">Ethereum Signature (Sepolia): Valid, signer <code class="did-code-small" style="font-size: 0.85rem; margin-left: 4px;">${result.ethereumSigner || 'Verified'}</code></span>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="check-item check-fail">
+                                <span class="check-icon">✗</span>
+                                <span class="check-name">Ethereum Signature (Sepolia): Verification Failed</span>
+                            </div>
+                        `;
+                    }
+                }
+
+                if (check === 'signature') {
+                    return `
+                        <div class="check-item ${passed ? 'check-pass' : 'check-fail'}">
+                            <span class="check-icon">${passed ? '✓' : '✗'}</span>
+                            <span class="check-name">DID ECDSA Signature: ${passed ? 'Valid' : 'Failed'}</span>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="check-item ${passed ? 'check-pass' : 'check-fail'}">
+                        <span class="check-icon">${passed ? '✓' : '✗'}</span>
+                        <span class="check-name">${this.formatCheckName(check)}</span>
+                    </div>
+                `;
+            };
+
             detailsHTML = `
                 <div class="verification-checks">
                     <h3>Verification Checks</h3>
-                    ${Object.entries(result.checks).map(([check, passed]) => `
-                        <div class="check-item ${passed ? 'check-pass' : 'check-fail'}">
-                            <span class="check-icon">${passed ? '✓' : '✗'}</span>
-                            <span class="check-name">${this.formatCheckName(check)}</span>
-                        </div>
-                    `).join('')}
+                    ${Object.entries(result.checks).map(([check, passed]) => renderCheckItem(check, passed)).join('')}
                 </div>
                 
                 ${result.issuer ? `
                     <div class="issuer-info">
-                        <h3>Issuer</h3>
-                        <code class="did-code-small">${result.issuer}</code>
+                        <h3>Issuer & Signer Identities</h3>
+                        <div style="margin-bottom: 0.6rem;">
+                            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); display: block;">DID Issuer</label>
+                            <code class="did-code-small">${result.issuer}</code>
+                        </div>
+                        ${result.ethereumSigner ? `
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); display: block;">Ethereum Signer (Sepolia Testnet)</label>
+                                <code class="did-code-small" style="color: #6ee7b7;">${result.ethereumSigner}</code>
+                            </div>
+                        ` : ''}
                     </div>
                 ` : ''}
             `;

@@ -115,6 +115,21 @@ Open your browser to: **http://localhost:5500**
 3. Request credential proofs from students
 4. Verify credentials without accessing sensitive data
 
+## 🦊 Web3 Signing (EIP-712)
+
+This application supports dual cryptographic attestation: credentials are signed by the issuer's W3C DID key and additionally by the issuer's Ethereum wallet on the **Sepolia testnet** (Chain ID `11155111`).
+
+### Key Highlights
+- **Standard**: Structured data signing using **EIP-712** (`credentialId`, `issuerDID`, `subjectDID`, `credentialHash`, `issuanceDate`).
+- **Off-Chain & Gasless**: Signing is completely off-chain. It requires **no gas**, **no ETH**, and **no smart contract interactions**.
+- **Privacy**: Credentials are **never published or stored on the blockchain**. The cryptographic signature is preserved directly inside the Verifiable Credential as `ethereumProof`.
+- **Verifier Independence**: Verifiers can verify the Ethereum signature mathematically without needing MetaMask installed.
+
+### Wallet Setup & Troubleshooting
+- **Install MetaMask**: Download and install the [MetaMask extension](https://metamask.io/download/).
+- **Brave Browser Users**: If MetaMask does not pop up in Brave, open `brave://settings/web3` and set **"Default Ethereum wallet"** to **"MetaMask"** (instead of Brave Wallet).
+- **Network**: Ensure MetaMask is switched to the **Sepolia** testnet. The app will automatically prompt you to switch or add the network if needed.
+
 ## 🏗️ Architecture
 
 ### Frontend (Progressive Web App)
@@ -308,6 +323,8 @@ Project_SSI/
 │   └── README.md           # Backend setup guide
 ├── js/                      # Frontend JavaScript
 │   ├── components/         # UI components
+│   ├── vendor/             # Third-party local libraries (ethers.umd.min.js)
+│   ├── web3-signer.js      # MetaMask & EIP-712 signing/verification
 │   ├── api.js              # API client
 │   ├── app.js              # Main app logic
 │   ├── did-manager.js      # DID operations

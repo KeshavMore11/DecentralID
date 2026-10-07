@@ -121,6 +121,49 @@ const credentialHolderComponent = {
             </tr>
         `).join('');
 
+        const ethProof = this.selectedCredential.ethereumProof;
+        let ethProofHTML = '';
+        if (ethProof) {
+            const shortSigner = window.web3Signer 
+                ? window.web3Signer.formatAddress(ethProof.signerAddress) 
+                : `${ethProof.signerAddress.substring(0, 6)}...${ethProof.signerAddress.substring(ethProof.signerAddress.length - 4)}`;
+
+            ethProofHTML = `
+                <div class="credential-detail-section web3-proof-section">
+                    <h3>Ethereum Proof (EIP-712)</h3>
+                    <div class="web3-proof-card">
+                        <div class="web3-proof-header">
+                            <span class="badge badge-success"><span class="badge-dot"></span> Signed by ${shortSigner} on Sepolia</span>
+                            <span class="badge badge-info">Gasless / Off-Chain</span>
+                        </div>
+                        <div class="detail-grid" style="margin-top: 0.85rem;">
+                            <div class="detail-item" style="grid-column: 1 / -1;">
+                                <label>Issuer Ethereum Signer Address</label>
+                                <div class="address-copy-row">
+                                    <code class="did-code-small" style="flex:1; word-break:break-all;">${ethProof.signerAddress}</code>
+                                    <button class="btn btn-secondary btn-small" onclick="navigator.clipboard.writeText('${ethProof.signerAddress}'); window.app.showSuccess('Signer address copied to clipboard!');" title="Copy full address">
+                                        📋 Copy
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Network</label>
+                                <p>Sepolia (Chain ID ${ethProof.chainId || 11155111})</p>
+                            </div>
+                            <div class="detail-item">
+                                <label>Proof Type</label>
+                                <p>${ethProof.type || 'EthereumEip712Signature'}</p>
+                            </div>
+                            <div class="detail-item" style="grid-column: 1 / -1;">
+                                <label>Credential Keccak256 Hash</label>
+                                <code class="did-code-small" style="word-break: break-all;">${ethProof.credentialHash}</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         details.innerHTML = `
             <div class="cert-header" style="margin-bottom: 1.5rem;">
                 <img src="assets/mit-adt-logo.png" alt="MIT-ADT University" class="cert-logo" />
@@ -189,6 +232,8 @@ const credentialHolderComponent = {
                     </table>
                 </div>
             </div>
+
+            ${ethProofHTML}
 
             <div class="credential-detail-section">
                 <h3>Selective Disclosure</h3>

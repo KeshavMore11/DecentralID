@@ -26,7 +26,8 @@ class SelectiveDisclosure {
             issuanceDate: credential.issuanceDate,
             attributes: {},
             nonces: {},
-            proof: credential.proof // Keep original proof
+            proof: credential.proof, // Keep original proof
+            ethereumProof: credential.ethereumProof // Keep original Ethereum proof
         };
 
         // Extract all attributes from credentialSubject
@@ -86,6 +87,7 @@ class SelectiveDisclosure {
             "issuer": credential.issuer,
             "issuanceDate": credential.issuanceDate,
             "originalProof": credential.proof, // Proof of the original credential
+            "originalEthereumProof": credential.ethereumProof, // Ethereum proof of the original credential
             "disclosedAttributes": {},
             "commitments": {},
             "proofs": {} // Proofs that disclosed attributes match commitments

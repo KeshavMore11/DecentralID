@@ -1,12 +1,14 @@
 /**
  * Credential Issuer Component
  * 
- * Interface for MIT-ADT University to issue verifiable academic credentials.
+ * Interface for MIT-ADT University to issue verifiable academic credentials
+ * with DID ECDSA and Ethereum EIP-712 MetaMask signatures on Sepolia testnet.
  */
 const credentialIssuerComponent = {
     courses: [],
     issuedCredentials: [],
     activeTab: 'issue', // 'issue' or 'history'
+    currentMetaMaskStatus: null,
 
     render() {
         const issuerDID = window.didManager.activeDID?.id || 'MIT-ADT Issuer';
@@ -61,8 +63,13 @@ const credentialIssuerComponent = {
                             <div class="section-header">
                                 <div>
                                     <h2>Issue Verifiable Academic Credential</h2>
-                                    <p class="text-muted">Cryptographically sign and issue academic degrees & grades (10-Point Grading Scale)</p>
+                                    <p class="text-muted">Dual Cryptographic Signing: W3C DID ECDSA Key + Ethereum EIP-712 MetaMask (Sepolia)</p>
                                 </div>
+                            </div>
+
+                            <!-- MetaMask Web3 Status Line -->
+                            <div id="issuer-metamask-status">
+                                ${this.renderMetaMaskStatusHTML(this.currentMetaMaskStatus)}
                             </div>
 
                             <form id="issue-credential-form" class="form-vertical" onsubmit="event.preventDefault(); credentialIssuerComponent.handlePreview()">
@@ -146,6 +153,7 @@ const credentialIssuerComponent = {
                                                 <th>Student Name</th>
                                                 <th>Degree Program</th>
                                                 <th>CGPA</th>
+                                                <th>Ethereum Signer</th>
                                                 <th>Status</th>
                                                 <th>Actions</th>
                                             </tr>
@@ -179,7 +187,9 @@ const credentialIssuerComponent = {
                     </div>
                     <div class="modal-actions">
                         <button class="btn btn-secondary" onclick="credentialIssuerComponent.closePreview()">← Edit Details</button>
-                        <button class="btn btn-primary" onclick="credentialIssuerComponent.submitIssuance()">🔐 Sign & Issue Credential</button>
+                        <button class="btn btn-primary" id="btn-sign-issue" onclick="credentialIssuerComponent.submitIssuance()">
+                            🦊 Sign with MetaMask & Issue
+                        </button>
                     </div>
                 </div>
             </div>
@@ -190,8 +200,133 @@ const credentialIssuerComponent = {
         this.courses = [];
         this.addCourse();
         await this.loadHistory();
+        await this.initMetaMask();
+
         if (this.activeTab === 'history') {
             this.switchTab('history');
+        }
+    },
+
+    async initMetaMask() {
+        if (window.web3Signer) {
+            this.currentMetaMaskStatus = await window.web3Signer.getStatus();
+            this.updateStatusUI(this.currentMetaMaskStatus);
+
+            window.web3Signer.onStateChange(status => {
+                this.currentMetaMaskStatus = status;
+                this.updateStatusUI(status);
+            });
+        }
+    },
+
+    renderMetaMaskStatusHTML(status) {
+        if (!status) {
+            return `
+                <div class="metamask-status-bar">
+                    <div class="metamask-status-info">
+                        <span class="metamask-icon">🦊</span>
+                        <span class="metamask-label">MetaMask:</span>
+                        <span class="metamask-state">Checking wallet...</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (!status.available) {
+            return `
+                <div class="metamask-status-bar" style="border-left: 4px solid var(--accent-amber);">
+                    <div class="metamask-status-info">
+                        <span class="metamask-icon">🦊</span>
+                        <span class="metamask-label">MetaMask:</span>
+                        <span class="metamask-state" style="color: var(--accent-amber);">Not detected</span>
+                    </div>
+                    <a href="https://metamask.io/download/" target="_blank" class="btn btn-small btn-secondary">
+                        Install MetaMask ↗
+                    </a>
+                </div>
+            `;
+        }
+
+        if (!status.connected) {
+            return `
+                <div class="metamask-status-bar">
+                    <div class="metamask-status-info">
+                        <span class="metamask-icon">🦊</span>
+                        <span class="metamask-label">MetaMask:</span>
+                        <span class="metamask-state" style="color: var(--text-tertiary);">Not connected</span>
+                    </div>
+                    <button type="button" class="btn btn-small btn-primary" onclick="credentialIssuerComponent.connectMetaMask()">
+                        Connect MetaMask
+                    </button>
+                </div>
+            `;
+        }
+
+        if (!status.isSepolia) {
+            return `
+                <div class="metamask-status-bar" style="border-left: 4px solid var(--accent-amber);">
+                    <div class="metamask-status-info">
+                        <span class="metamask-icon">🦊</span>
+                        <span class="metamask-label">MetaMask:</span>
+                        <span class="metamask-state">Connected <code>${status.formattedAddress}</code></span>
+                        <span class="badge badge-warning">Wrong Network (${status.chainId || 'Unknown'})</span>
+                    </div>
+                    <button type="button" class="btn btn-small btn-secondary" onclick="credentialIssuerComponent.switchNetwork()">
+                        Switch to Sepolia
+                    </button>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="metamask-status-bar" style="border-left: 4px solid var(--accent-green);">
+                <div class="metamask-status-info">
+                    <span class="metamask-icon">🦊</span>
+                    <span class="metamask-label">MetaMask:</span>
+                    <span class="metamask-state">Connected <code class="did-code-small">${status.formattedAddress}</code> · Sepolia</span>
+                    <span class="badge badge-success"><span class="badge-dot"></span> Ready to Sign</span>
+                </div>
+            </div>
+        `;
+    },
+
+    updateStatusUI(status) {
+        const container = document.getElementById('issuer-metamask-status');
+        if (container) {
+            container.innerHTML = this.renderMetaMaskStatusHTML(status);
+        }
+
+        // Also update modal status element if preview modal is currently open
+        const modalStatus = document.getElementById('modal-metamask-status');
+        if (modalStatus) {
+            modalStatus.innerHTML = this.renderMetaMaskStatusHTML(status);
+        }
+    },
+
+    async connectMetaMask() {
+        try {
+            if (!window.web3Signer) {
+                throw new Error("Web3 signer module is not loaded.");
+            }
+            await window.web3Signer.connect();
+            await window.web3Signer.ensureSepolia();
+            this.currentMetaMaskStatus = await window.web3Signer.getStatus();
+            this.updateStatusUI(this.currentMetaMaskStatus);
+            window.app.showSuccess("Connected to MetaMask on Sepolia testnet");
+        } catch (error) {
+            window.app.showError(error.message);
+        }
+    },
+
+    async switchNetwork() {
+        try {
+            if (!window.web3Signer) return;
+            await window.web3Signer.ensureSepolia();
+            this.currentMetaMaskStatus = await window.web3Signer.getStatus();
+            this.updateStatusUI(this.currentMetaMaskStatus);
+            window.app.showSuccess("Switched to Sepolia testnet");
+        } catch (error) {
+            window.app.showError(error.message);
         }
     },
 
@@ -202,6 +337,7 @@ const credentialIssuerComponent = {
             mainContent.innerHTML = this.render();
             if (tab === 'issue') {
                 this.renderCourses();
+                this.updateStatusUI(this.currentMetaMaskStatus);
             }
         }
     },
@@ -233,7 +369,7 @@ const credentialIssuerComponent = {
                         <input type="text" class="course-name" value="${course.courseName || ''}" oninput="credentialIssuerComponent.updateCourse(${course.id}, 'courseName', this.value)" placeholder="e.g., Mathematics-I" required />
                     </div>
                     <div class="form-group">
-                        <label>Grade *</label>
+                        <label>Grade (10-Pt Scale) *</label>
                         <select class="course-grade" onchange="credentialIssuerComponent.updateCourse(${course.id}, 'grade', this.value)" required>
                             <option value="">Select</option>
                             ${['O', 'A+', 'A', 'B+', 'B', 'C', 'P', 'F'].map(g => `<option value="${g}" ${course.grade === g ? 'selected' : ''}>${g}</option>`).join('')}
@@ -289,12 +425,16 @@ const credentialIssuerComponent = {
         return this.issuedCredentials.map(cred => {
             const gpa = cred.credentialSubject.gpa || 'N/A';
             const scale = cred.credentialSubject.gpaScale || 10;
+            const ethSigner = cred.ethereumProof?.signerAddress;
+            const shortEthSigner = ethSigner ? (window.web3Signer?.formatAddress(ethSigner) || ethSigner) : 'None';
+
             return `
                 <tr>
                     <td>${new Date(cred.issuanceDate).toLocaleDateString()}</td>
                     <td><strong>${cred.credentialSubject.name}</strong></td>
                     <td>${cred.credentialSubject.degree}</td>
                     <td><span class="badge badge-info">${gpa}/${scale}</span></td>
+                    <td>${ethSigner ? `<code class="did-code-small" title="${ethSigner}">${shortEthSigner}</code>` : '<span class="text-muted">Legacy</span>'}</td>
                     <td><span class="badge badge-success"><span class="badge-dot"></span> Signed & Issued</span></td>
                     <td>
                         <button class="btn btn-small btn-icon-danger" 
@@ -351,7 +491,16 @@ const credentialIssuerComponent = {
         const modal = document.getElementById('preview-modal');
         const content = document.getElementById('preview-content');
 
+        const ethStatus = this.currentMetaMaskStatus;
+        const signerText = ethStatus?.connected && ethStatus?.isSepolia
+            ? `Connected: ${ethStatus.account} (Sepolia)`
+            : 'MetaMask will prompt to connect & sign on Sepolia';
+
         content.innerHTML = `
+            <div id="modal-metamask-status" style="margin-bottom: 1.25rem;">
+                ${this.renderMetaMaskStatusHTML(ethStatus)}
+            </div>
+
             <div class="credential-card credential-preview-certificate" style="cursor: default; transform: none;">
                 <div class="cert-header">
                     <img src="assets/mit-adt-logo.png" alt="MIT-ADT University" class="cert-logo" />
@@ -377,8 +526,12 @@ const credentialIssuerComponent = {
                             <p style="font-size: 1.2rem; color: var(--brand-gold);"><strong>${this.pendingIssuanceData.gpa} / 10</strong></p>
                         </div>
                         <div class="detail-item">
-                            <label>Student DID</label>
+                            <label>Student Recipient DID</label>
                             <code class="did-code-small">${studentDID}</code>
+                        </div>
+                        <div class="detail-item" style="grid-column: 1 / -1;">
+                            <label>Ethereum Issuer Signer (Sepolia Testnet)</label>
+                            <p style="font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);">${signerText}</p>
                         </div>
                     </div>
                 </div>
@@ -419,14 +572,22 @@ const credentialIssuerComponent = {
     },
 
     async submitIssuance() {
-        try {
-            this.closePreview();
-            window.app.showLoading();
+        const signButton = document.getElementById('btn-sign-issue');
+        const originalButtonHTML = signButton ? signButton.innerHTML : '🦊 Sign with MetaMask & Issue';
 
+        try {
+            if (signButton) {
+                signButton.disabled = true;
+                signButton.innerHTML = '⏳ Waiting for MetaMask signature...';
+            }
+
+            window.app.showToast('Please confirm the EIP-712 credential signature in your MetaMask popup...', 'info');
+
+            // Issue credential with DID ECDSA and Ethereum EIP-712 proofs
             const credential = await window.credentialManager.issueCredential(this.pendingIssuanceData);
 
-            window.app.hideLoading();
-            window.app.showSuccess('✓ Verifiable Credential successfully signed & issued!');
+            this.closePreview();
+            window.app.showSuccess('✓ Verifiable Credential signed with MetaMask & issued successfully!');
 
             await this.loadHistory();
             this.switchTab('history');
@@ -436,8 +597,13 @@ const credentialIssuerComponent = {
             this.addCourse();
 
         } catch (error) {
-            window.app.hideLoading();
-            window.app.showError('Failed to issue credential: ' + error.message);
+            console.error('Issuance error:', error);
+            window.app.showError('Issuance failed: ' + (error.message || error));
+        } finally {
+            if (signButton) {
+                signButton.disabled = false;
+                signButton.innerHTML = originalButtonHTML;
+            }
         }
     },
 

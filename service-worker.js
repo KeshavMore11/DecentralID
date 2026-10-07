@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ssi-wallet-v2';
+const CACHE_NAME = 'ssi-wallet-v3';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -9,6 +9,8 @@ const urlsToCache = [
     '/js/did-manager.js',
     '/js/theme.js',
     '/js/role-switcher.js',
+    '/js/vendor/ethers.umd.min.js',
+    '/js/web3-signer.js',
     '/js/credential-manager.js',
     '/js/selective-disclosure.js',
     '/js/did-auth.js',

@@ -67,21 +67,30 @@ class CredentialManager {
             }
         };
 
-        // 5. Sign the credential
+        // 5. Sign the credential with DID ECDSA key
         const privateKey = await window.didManager.getPrivateKey();
         const proof = await this.createProof(credential, privateKey, issuerDID);
 
-        // 6. Add proof to credential
+        // 6. Sign with MetaMask (Ethereum EIP-712 typed data on Sepolia)
+        let ethereumProof = null;
+        if (window.web3Signer) {
+            ethereumProof = await window.web3Signer.signCredential(credential);
+        } else {
+            throw new Error("Web3 signer is not available. Please ensure MetaMask and web3-signer are loaded.");
+        }
+
+        // 7. Add proofs to credential
         const verifiableCredential = {
             ...credential,
-            proof: proof
+            proof: proof,
+            ethereumProof: ethereumProof
         };
 
-        // 7. Store the credential
+        // 8. Store the credential
         await window.storageManager.save('credentials', verifiableCredential);
         this.credentials.push(verifiableCredential);
 
-        console.log('Credential issued:', credentialId);
+        console.log('Credential issued with Ethereum proof:', credentialId);
         return verifiableCredential;
     }
 
@@ -93,9 +102,10 @@ class CredentialManager {
      * @returns {Promise<Object>} The proof object
      */
     async createProof(credential, privateKey, issuerDID) {
-        // Create a canonical representation for signing
+        // Create a canonical representation for signing (exclude all proof objects)
         const credentialCopy = { ...credential };
-        delete credentialCopy.proof; // Remove proof if it exists
+        delete credentialCopy.proof; // Remove DID proof if it exists
+        delete credentialCopy.ethereumProof; // Remove Ethereum proof if it exists
 
         // Canonicalize (in production, use proper JSON-LD canonicalization)
         const canonicalData = JSON.stringify(credentialCopy);
@@ -124,10 +134,14 @@ class CredentialManager {
             checks: {
                 structure: false,
                 signature: false,
+                ethereumSignature: false,
                 expiration: true, // We don't have expiration in our simple model
                 revocation: true  // We don't have revocation yet
             },
             issuer: null,
+            ethereumSigner: null,
+            network: null,
+            isLegacy: false,
             errors: []
         };
 
@@ -156,26 +170,50 @@ class CredentialManager {
                 'public'
             );
 
-            // 3. Verify signature
+            // 3. Verify DID signature (excluding proof and ethereumProof)
             const credentialCopy = { ...credential };
             delete credentialCopy.proof;
+            delete credentialCopy.ethereumProof;
             const canonicalData = JSON.stringify(credentialCopy);
 
-            const isValid = await window.cryptoUtils.verify(
+            const isValidDIDSignature = await window.cryptoUtils.verify(
                 canonicalData,
                 credential.proof.signature,
                 publicKey
             );
 
-            result.checks.signature = isValid;
+            result.checks.signature = isValidDIDSignature;
+            if (!isValidDIDSignature) {
+                result.errors.push("DID signature verification failed");
+            }
 
-            // 4. Overall verification
+            // 4. Verify Ethereum EIP-712 Signature
+            if (credential.ethereumProof) {
+                if (window.web3Signer) {
+                    const ethResult = window.web3Signer.verifyCredentialSignature(credential);
+                    result.checks.ethereumSignature = ethResult.valid;
+                    if (ethResult.valid) {
+                        result.ethereumSigner = ethResult.signerAddress;
+                        result.network = ethResult.network || 'sepolia';
+                    } else {
+                        result.errors.push(`Ethereum signature invalid: ${ethResult.error || 'Verification failed'}`);
+                    }
+                } else {
+                    result.errors.push("Web3 signer module not loaded. Cannot verify Ethereum signature.");
+                    result.checks.ethereumSignature = false;
+                }
+            } else {
+                // Legacy credential without Ethereum proof (backward compatibility)
+                result.checks.ethereumSignature = true;
+                result.isLegacy = true;
+                result.legacyNote = "No Ethereum signature (legacy credential)";
+            }
+
+            // 5. Overall verification
             result.verified = Object.values(result.checks).every(v => v === true);
 
             if (result.verified) {
                 console.log('✓ Credential verified successfully');
-            } else {
-                result.errors.push("Signature verification failed");
             }
 
         } catch (error) {
